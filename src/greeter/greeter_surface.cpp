@@ -234,7 +234,6 @@ void GreeterSurface::initialize(RenderContext* context) {
 
   auto clockTime = std::make_unique<Label>();
   clockTime->setFontSize(Style::scaled(48.0f));
-  clockTime->setBold(true);
   clockTime->setTextAlign(TextAlign::Center);
   clockTime->setColor(colorForRole(ColorRole::OnSurface));
   clockTime->setVisible(false);
