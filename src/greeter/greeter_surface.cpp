@@ -652,7 +652,9 @@ void GreeterSurface::initialize(RenderContext* context) {
     if (m_bottomBrandLogo != nullptr && m_brandLogoTexture.id != 0) {
       m_bottomBrandLogo->setTextureId(m_brandLogoTexture.id);
       m_bottomBrandLogo->setTextureSize(m_brandLogoTexture.width, m_brandLogoTexture.height);
-      m_bottomBrandLogo->setTint(colorForRole(ColorRole::OnSurface, 0.90f));
+      // Keep the multicolor brand artwork intact. Palette tinting, especially
+      // with a light theme's dark on-surface color, crushes its colors.
+      m_bottomBrandLogo->setTint(rgba(1.0f, 1.0f, 1.0f, 1.0f));
     } else {
       kLog.warn("failed loading logo texture from {}", logoPath.string());
     }
@@ -1119,7 +1121,7 @@ void GreeterSurface::layoutScene(std::uint32_t width, std::uint32_t height) {
       const float logoSize = Style::scaled(64.0f);
       m_bottomBrandLogo->setSize(logoSize, logoSize);
       m_bottomBrandLogo->setPosition(ox + std::round((sw - logoSize) * 0.5f), oy + sh - logoSize - Style::spaceLg());
-      m_bottomBrandLogo->setTint(colorForRole(ColorRole::OnSurface, 0.88f));
+      m_bottomBrandLogo->setTint(rgba(1.0f, 1.0f, 1.0f, 1.0f));
     }
   }
 
