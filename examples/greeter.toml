@@ -74,8 +74,9 @@ fill_mode = "crop"
 [clock]
 # Show the clock (default true). The default position centers it above the login panel.
 enabled = true
-# above-panel (default), top-left, top-right, bottom-left, or bottom-right.
+# above-panel (default), top-left, top-center, top-right, bottom-left, bottom-center, or bottom-right.
 # Corner occupants stack inward without overlapping: scheme selector, power buttons, then clock.
+# bottom-center uses the logo slot when hide_logo is true, or stacks above a visible logo.
 position = "above-panel"
 # Noctalia-compatible bare strftime or C++ chrono formats. Empty hides that line.
 time_format = "{:%H:%M}"

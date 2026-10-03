@@ -231,7 +231,7 @@ fill_color = "#ff0000"
       std::ofstream(fixture.runtimeDirectory / "greeter.toml") << R"toml(
 [clock]
 enabled = false
-position = "bottom-left"
+position = "bottom-center"
 time_format = ""
 date_format = "{:%F}"
 )toml";
@@ -239,7 +239,7 @@ date_format = "{:%F}"
       const ScopedStateDirectory stateDirectory(fixture.runtimeDirectory);
       const auto preferences = greeter::loadGreeterPreferences();
       expect("clock enabled parses", preferences.clockEnabled, false, {}, passed);
-      expect("clock position parses", preferences.clockPosition == "bottom-left", true, {}, passed);
+      expect("clock position parses", preferences.clockPosition == "bottom-center", true, {}, passed);
       expect("empty clock format is preserved", preferences.clockTimeFormat.empty(), true, {}, passed);
       expect("clock date format parses", preferences.clockDateFormat == "{:%F}", true, {}, passed);
 

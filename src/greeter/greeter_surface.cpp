@@ -1300,7 +1300,7 @@ void GreeterSurface::layoutScene(std::uint32_t width, std::uint32_t height) {
   }
 
   layoutPowerButtons(ox, oy, sw, sh);
-  layoutClock(ox, oy, sw, sh, panelX, panelY, panelWidth);
+  layoutClock(ox, oy, sw, sh, panelX, panelY, panelWidth, panelHeight);
 
   if (!m_passwordVisible && showsUserDropdown()) {
     layoutPanelUserSelector(contentLeft, contentTop, contentWidth, rowHeight);
@@ -2717,7 +2717,7 @@ void GreeterSurface::layoutPowerButtons(float ox, float oy, float sw, float sh) 
 
 void GreeterSurface::layoutClock(
     const float ox, const float oy, const float sw, const float sh, const float panelX, const float panelY,
-    const float panelWidth
+    const float panelWidth, const float panelHeight
 ) {
   if (m_renderContext == nullptr || m_clockTimeLabel == nullptr || m_clockDateLabel == nullptr) {
     return;
@@ -2773,6 +2773,44 @@ void GreeterSurface::layoutClock(
       m_clockTimeLabel->setVisible(false);
       m_clockDateLabel->setVisible(false);
       return;
+    }
+  } else if (m_clockPosition == "top-center" || m_clockPosition == "bottom-center") {
+    const bool onBottom = m_clockPosition == "bottom-center";
+    blockX = ox + (sw - blockWidth) * 0.5f;
+    if (onBottom) {
+      const float logoTop =
+          m_bottomBrandLogo != nullptr && m_bottomBrandLogo->visible() ? m_bottomBrandLogo->y() : oy + sh - margin;
+      blockY = logoTop
+          - totalHeight
+          - (m_bottomBrandLogo != nullptr && m_bottomBrandLogo->visible() ? Style::spaceSm() : 0.0f);
+      const float maximumPanelY = panelY + panelHeight + Style::spaceXl();
+      if (blockY < maximumPanelY && m_clockDateLabel->visible()) {
+        m_clockDateLabel->setVisible(false);
+        totalHeight = blockHeight();
+        blockY = logoTop
+            - totalHeight
+            - (m_bottomBrandLogo != nullptr && m_bottomBrandLogo->visible() ? Style::spaceSm() : 0.0f);
+      }
+      if (blockY < maximumPanelY) {
+        m_clockTimeLabel->setVisible(false);
+        m_clockDateLabel->setVisible(false);
+        return;
+      }
+    } else {
+      blockY = oy + margin;
+      if (m_configErrorBanner != nullptr && m_configErrorBanner->visible()) {
+        blockY = m_configErrorBanner->y() + m_configErrorBanner->height() + Style::spaceSm();
+      }
+      const float panelLimit = panelY - Style::spaceXl();
+      if (blockY + totalHeight > panelLimit && m_clockDateLabel->visible()) {
+        m_clockDateLabel->setVisible(false);
+        totalHeight = blockHeight();
+      }
+      if (blockY + totalHeight > panelLimit) {
+        m_clockTimeLabel->setVisible(false);
+        m_clockDateLabel->setVisible(false);
+        return;
+      }
     }
   } else {
     const bool onRight = m_clockPosition == "top-right" || m_clockPosition == "bottom-right";

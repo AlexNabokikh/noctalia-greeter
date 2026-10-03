@@ -128,7 +128,8 @@ private:
   void layoutPanelUserSelector(float x, float y, float w, float h);
   void layoutPanelSessionSelector(float x, float y, float w, float h);
   void layoutPowerButtons(float ox, float oy, float sw, float sh);
-  void layoutClock(float ox, float oy, float sw, float sh, float panelX, float panelY, float panelWidth);
+  void
+  layoutClock(float ox, float oy, float sw, float sh, float panelX, float panelY, float panelWidth, float panelHeight);
   void commitImmediateFrame(bool layout);
   void setFocusIndex(std::ptrdiff_t index);
   void syncFocusIndexFromFocused();

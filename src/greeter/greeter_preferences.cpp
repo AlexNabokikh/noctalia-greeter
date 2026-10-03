@@ -429,9 +429,9 @@ namespace greeter {
       prefs.clockEnabled = *file.clockEnabled;
     }
     if (file.clockPosition.has_value()) {
-      constexpr std::array<std::string_view, 5> kClockPositions{
-          "above-panel", "top-left", "top-right", "bottom-left", "bottom-right"
-      };
+      constexpr std::array<std::string_view, 7> kClockPositions{"above-panel", "top-left",    "top-center",
+                                                                "top-right",   "bottom-left", "bottom-center",
+                                                                "bottom-right"};
       if (std::ranges::find(kClockPositions, *file.clockPosition) != kClockPositions.end()) {
         prefs.clockPosition = *file.clockPosition;
       } else {
