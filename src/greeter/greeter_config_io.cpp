@@ -50,7 +50,8 @@ namespace {
         || key == "cursor"
         || key == "keyboard"
         || key == "auth"
-        || key == "idle";
+        || key == "idle"
+        || key == "clock";
   }
 
   [[nodiscard]] bool isKnownSessionKey(std::string_view key) {
@@ -87,6 +88,10 @@ namespace {
   }
 
   [[nodiscard]] bool isKnownIdleKey(std::string_view key) { return key == "timeout"; }
+
+  [[nodiscard]] bool isKnownClockKey(std::string_view key) {
+    return key == "enabled" || key == "position" || key == "time_format" || key == "date_format";
+  }
 
   [[nodiscard]] bool isKnownCursorKey(std::string_view key) { return key == "theme" || key == "size" || key == "path"; }
 
@@ -274,6 +279,32 @@ namespace {
               }
             } else {
               kLog.warn("{}: appearance.wallpapers must be a table", path.string());
+            }
+          }
+        } else if (keyView == "clock") {
+          if (!isKnownClockKey(entryView)) {
+            warnUnknownSectionKey(path, keyView, entryView);
+            continue;
+          }
+          if (entryView == "enabled") {
+            if (const auto value = entryNode.value<bool>()) {
+              config.clockEnabled = *value;
+            } else {
+              kLog.warn("{}: invalid clock.enabled value", path.string());
+            }
+          } else if (entryView == "position") {
+            config.clockPosition = stringValue(entryNode);
+          } else if (entryView == "time_format") {
+            if (const auto value = entryNode.value<std::string>()) {
+              config.clockTimeFormat = *value;
+            } else {
+              kLog.warn("{}: invalid clock.time_format value", path.string());
+            }
+          } else if (entryView == "date_format") {
+            if (const auto value = entryNode.value<std::string>()) {
+              config.clockDateFormat = *value;
+            } else {
+              kLog.warn("{}: invalid clock.date_format value", path.string());
             }
           }
         } else if (keyView == "output") {
@@ -511,6 +542,29 @@ namespace {
     );
     if (!appearance.empty()) {
       root.insert("appearance", std::move(appearance));
+    }
+
+    if (config.clockEnabled.has_value()
+        || config.clockPosition.has_value()
+        || config.clockTimeFormat.has_value()
+        || config.clockDateFormat.has_value()) {
+      toml::table clock;
+      if (config.clockEnabled.has_value()) {
+        clock.insert_or_assign("enabled", *config.clockEnabled);
+      }
+      insertString(
+          clock, "position", config.clockPosition,
+          [](toml::table& table, std::string_view key, const std::string& value) {
+            table.insert_or_assign(std::string(key), value);
+          }
+      );
+      if (config.clockTimeFormat.has_value()) {
+        clock.insert_or_assign("time_format", *config.clockTimeFormat);
+      }
+      if (config.clockDateFormat.has_value()) {
+        clock.insert_or_assign("date_format", *config.clockDateFormat);
+      }
+      root.insert("clock", std::move(clock));
     }
 
     toml::table output;
@@ -944,6 +998,7 @@ namespace greeter::config {
            "[idle] timeout, [cursor] theme/size/path\n";
     out << "# [keyboard] layout/variant/options/numlock\n";
     out << "# [auth] allow_empty_password (bool), request_timeout (0-3600 seconds; default 60, 0 disables)\n";
+    out << "# [clock] enabled/position/time_format/date_format\n";
     out << '\n';
     out << formatToml(table);
 

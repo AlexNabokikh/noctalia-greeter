@@ -81,6 +81,9 @@ public:
   void flushDeferredFrameRequests();
 
   void prepareFrame(std::uint32_t width, std::uint32_t height, bool needsLayout);
+  // Refreshes the wall-clock labels once per second. Returns true when their
+  // contents changed and a new layout is needed.
+  [[nodiscard]] bool updateClock();
 
   void setOutputViewport(float x, float y, float width, float height);
   void clearOutputViewport();
@@ -125,6 +128,7 @@ private:
   void layoutPanelUserSelector(float x, float y, float w, float h);
   void layoutPanelSessionSelector(float x, float y, float w, float h);
   void layoutPowerButtons(float ox, float oy, float sw, float sh);
+  void layoutClock(float ox, float oy, float sw, float sh, float panelX, float panelY, float panelWidth);
   void commitImmediateFrame(bool layout);
   void setFocusIndex(std::ptrdiff_t index);
   void syncFocusIndexFromFocused();
@@ -218,6 +222,8 @@ private:
   RectNode* m_configErrorBanner = nullptr;
   Label* m_configErrorHeading = nullptr;
   Label* m_configErrorLabel = nullptr;
+  Label* m_clockTimeLabel = nullptr;
+  Label* m_clockDateLabel = nullptr;
   Button* m_shutdownButton = nullptr;
   Button* m_rebootButton = nullptr;
   Button* m_firmwareButton = nullptr;
@@ -268,6 +274,11 @@ private:
   // UI element positioning: "hidden", "bottom-left", "bottom-right", "top-left", "top-right"
   std::string m_powerButtonsPosition;
   std::string m_schemeSelectorPosition;
+  bool m_clockEnabled = true;
+  std::string m_clockPosition = "above-panel";
+  std::string m_clockTimeFormat = "{:%H:%M}";
+  std::string m_clockDateFormat = "%A, %x";
+  std::optional<std::int64_t> m_lastClockSecond;
   std::chrono::steady_clock::time_point m_lastAnimTick{};
   bool m_animTickInitialized = false;
   bool m_inInputDispatch = false;

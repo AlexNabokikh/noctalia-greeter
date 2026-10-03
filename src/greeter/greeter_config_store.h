@@ -76,6 +76,11 @@ namespace greeter::config {
 
     std::optional<bool> authAllowEmptyPassword;
     std::optional<int> authRequestTimeoutSec;
+
+    std::optional<bool> clockEnabled;
+    std::optional<std::string> clockPosition;
+    std::optional<std::string> clockTimeFormat;
+    std::optional<std::string> clockDateFormat;
   };
 
   // Sync + UI mutable file (sync.toml). Never managed by Nix. Loses to greeter.toml.

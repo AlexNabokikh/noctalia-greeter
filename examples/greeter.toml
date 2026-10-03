@@ -71,6 +71,16 @@ fill_mode = "crop"
 # path = "/var/lib/noctalia-greeter/wallpaper-DP-1.webp"
 # fill_mode = "crop"
 
+[clock]
+# Show the clock (default true). The default position centers it above the login panel.
+enabled = true
+# above-panel (default), top-left, top-right, bottom-left, or bottom-right.
+# Corner occupants stack inward without overlapping: scheme selector, power buttons, then clock.
+position = "above-panel"
+# Noctalia-compatible bare strftime or C++ chrono formats. Empty hides that line.
+time_format = "{:%H:%M}"
+date_format = "%A, %x"
+
 [output]
 # Pin the greeter to one connector or stable EDID identifier; omit to mirror on every monitor.
 # List both with: noctalia-greeter outputs --details

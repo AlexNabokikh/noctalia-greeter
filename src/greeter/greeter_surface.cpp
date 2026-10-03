@@ -22,6 +22,7 @@
 #include "render/scene/rect_node.h"
 #include "render/scene/wallpaper_node.h"
 #include "theme/builtin_palettes.h"
+#include "time/time_format.h"
 #include "ui/controls/box.h"
 #include "ui/controls/button.h"
 #include "ui/controls/glyph.h"
@@ -230,6 +231,25 @@ void GreeterSurface::initialize(RenderContext* context) {
   bottomLogo->setZIndex(2);
   m_bottomBrandLogo = bottomLogo.get();
   m_root.addChild(std::move(bottomLogo));
+
+  auto clockTime = std::make_unique<Label>();
+  clockTime->setFontSize(Style::scaled(48.0f));
+  clockTime->setBold(true);
+  clockTime->setTextAlign(TextAlign::Center);
+  clockTime->setColor(colorForRole(ColorRole::OnSurface));
+  clockTime->setVisible(false);
+  m_clockTimeLabel = clockTime.get();
+  m_clockTimeLabel->setZIndex(5);
+  m_root.addChild(std::move(clockTime));
+
+  auto clockDate = std::make_unique<Label>();
+  clockDate->setFontSize(Style::fontSizeBody());
+  clockDate->setTextAlign(TextAlign::Center);
+  clockDate->setColor(colorForRole(ColorRole::OnSurfaceVariant));
+  clockDate->setVisible(false);
+  m_clockDateLabel = clockDate.get();
+  m_clockDateLabel->setZIndex(5);
+  m_root.addChild(std::move(clockDate));
 
   auto formSubtitle = std::make_unique<Label>();
   formSubtitle->setFontSize(Style::fontSizeTitle());
@@ -594,6 +614,7 @@ void GreeterSurface::initialize(RenderContext* context) {
   loadSessions();
   buildSchemeNames();
   loadPreferences();
+  (void)updateClock();
   if (m_selectedScheme >= m_schemeNames.size()) {
     if (const auto fallback = findSchemeIndex("Noctalia")) {
       m_selectedScheme = *fallback;
@@ -983,6 +1004,25 @@ void GreeterSurface::prepareFrame(std::uint32_t width, std::uint32_t height, boo
   }
 }
 
+bool GreeterSurface::updateClock() {
+  if (m_clockTimeLabel == nullptr || m_clockDateLabel == nullptr) {
+    return false;
+  }
+
+  const auto now = std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now());
+  const std::int64_t second = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
+  if (m_lastClockSecond.has_value() && *m_lastClockSecond == second) {
+    return false;
+  }
+  m_lastClockSecond = second;
+
+  const std::string time = m_clockEnabled ? formatLocalUnixTime(second, m_clockTimeFormat) : std::string{};
+  const std::string date = m_clockEnabled ? formatLocalUnixTime(second, m_clockDateFormat) : std::string{};
+  const bool timeChanged = m_clockTimeLabel->setText(time);
+  const bool dateChanged = m_clockDateLabel->setText(date);
+  return timeChanged || dateChanged;
+}
+
 void GreeterSurface::syncScaledTypography() {
   if (m_headerUserGlyph != nullptr) {
     m_headerUserGlyph->setGlyphSize(Style::scaled(kHeaderUserIconBase));
@@ -997,6 +1037,8 @@ void GreeterSurface::syncScaledTypography() {
   m_sessionSelectGlyph->setGlyphSize(Style::fontSizeBody());
   m_schemeSelectLabel->setFontSize(Style::fontSizeBody());
   m_schemeSelectGlyph->setGlyphSize(Style::fontSizeBody());
+  m_clockTimeLabel->setFontSize(Style::scaled(48.0f));
+  m_clockDateLabel->setFontSize(Style::fontSizeBody());
   m_loginButton->setGlyphSize(Style::fontSizeTitle());
   m_backButton->setGlyphSize(Style::fontSizeTitle());
   m_statusLabel->setFontSize(Style::fontSizeCaption());
@@ -1258,6 +1300,7 @@ void GreeterSurface::layoutScene(std::uint32_t width, std::uint32_t height) {
   }
 
   layoutPowerButtons(ox, oy, sw, sh);
+  layoutClock(ox, oy, sw, sh, panelX, panelY, panelWidth);
 
   if (!m_passwordVisible && showsUserDropdown()) {
     layoutPanelUserSelector(contentLeft, contentTop, contentWidth, rowHeight);
@@ -2068,6 +2111,10 @@ void GreeterSurface::loadPreferences() {
   m_hideLogo = prefs.hideLogo;
   m_powerButtonsPosition = prefs.powerButtonsPosition.value_or("bottom-right");
   m_schemeSelectorPosition = prefs.schemeSelectorPosition.value_or("top-right");
+  m_clockEnabled = prefs.clockEnabled;
+  m_clockPosition = prefs.clockPosition;
+  m_clockTimeFormat = prefs.clockTimeFormat;
+  m_clockDateFormat = prefs.clockDateFormat;
 }
 
 void GreeterSurface::savePreferences() const {
@@ -2612,11 +2659,14 @@ void GreeterSurface::layoutPowerButtons(float ox, float oy, float sw, float sh) 
 
   // Determine anchor position based on config
   float y;
+  const bool sharesSchemeCorner =
+      m_schemeSelectorPosition != "hidden" && m_powerButtonsPosition == m_schemeSelectorPosition;
+  const float schemeOffset = sharesSchemeCorner ? Style::controlHeightSm() + gap : 0.0f;
   if (m_powerButtonsPosition == "top-left" || m_powerButtonsPosition == "top-right") {
-    y = oy + margin;
+    y = oy + margin + schemeOffset;
   } else {
     // Default: bottom-left or bottom-right
-    y = oy + sh - size - margin;
+    y = oy + sh - size - margin - schemeOffset;
   }
 
   const auto place = [&](Button* btn, float x) {
@@ -2663,6 +2713,96 @@ void GreeterSurface::layoutPowerButtons(float ox, float oy, float sw, float sh) 
       place(m_firmwareButton, x);
     }
   }
+}
+
+void GreeterSurface::layoutClock(
+    const float ox, const float oy, const float sw, const float sh, const float panelX, const float panelY,
+    const float panelWidth
+) {
+  if (m_renderContext == nullptr || m_clockTimeLabel == nullptr || m_clockDateLabel == nullptr) {
+    return;
+  }
+  if (!m_clockEnabled || (m_clockTimeLabel->text().empty() && m_clockDateLabel->text().empty())) {
+    m_clockTimeLabel->setVisible(false);
+    m_clockDateLabel->setVisible(false);
+    return;
+  }
+
+  m_clockTimeLabel->setVisible(!m_clockTimeLabel->text().empty());
+  m_clockDateLabel->setVisible(!m_clockDateLabel->text().empty());
+  m_clockTimeLabel->setColor(colorForRole(ColorRole::OnSurface));
+  m_clockDateLabel->setColor(colorForRole(ColorRole::OnSurfaceVariant));
+
+  const float margin = Style::spaceLg();
+  const float lineGap = Style::spaceXs();
+  const float widthLimit = std::max(1.0f, std::min(panelWidth, sw - margin * 2.0f));
+  m_clockTimeLabel->setMaxWidth(widthLimit);
+  m_clockDateLabel->setMaxWidth(widthLimit);
+  if (m_clockTimeLabel->visible()) {
+    m_clockTimeLabel->measure(*m_renderContext);
+  }
+  if (m_clockDateLabel->visible()) {
+    m_clockDateLabel->measure(*m_renderContext);
+  }
+  const float blockWidth = std::max(
+      m_clockTimeLabel->visible() ? m_clockTimeLabel->width() : 0.0f,
+      m_clockDateLabel->visible() ? m_clockDateLabel->width() : 0.0f
+  );
+
+  const auto blockHeight = [this, lineGap]() {
+    const float timeHeight = m_clockTimeLabel->visible() ? m_clockTimeLabel->height() : 0.0f;
+    const float dateHeight = m_clockDateLabel->visible() ? m_clockDateLabel->height() : 0.0f;
+    return timeHeight + dateHeight + (m_clockTimeLabel->visible() && m_clockDateLabel->visible() ? lineGap : 0.0f);
+  };
+
+  float totalHeight = blockHeight();
+  float blockX = panelX + (panelWidth - blockWidth) * 0.5f;
+  float blockY = 0.0f;
+  if (m_clockPosition == "above-panel") {
+    float minimumY = oy + margin;
+    if (m_configErrorBanner != nullptr && m_configErrorBanner->visible()) {
+      minimumY = std::max(minimumY, m_configErrorBanner->y() + m_configErrorBanner->height() + Style::spaceSm());
+    }
+    blockY = panelY - totalHeight - Style::spaceXl();
+    if (blockY < minimumY && m_clockDateLabel->visible()) {
+      m_clockDateLabel->setVisible(false);
+      totalHeight = blockHeight();
+      blockY = panelY - totalHeight - Style::spaceXl();
+    }
+    if (blockY < minimumY) {
+      m_clockTimeLabel->setVisible(false);
+      m_clockDateLabel->setVisible(false);
+      return;
+    }
+  } else {
+    const bool onRight = m_clockPosition == "top-right" || m_clockPosition == "bottom-right";
+    const bool onBottom = m_clockPosition == "bottom-left" || m_clockPosition == "bottom-right";
+    float occupied = 0.0f;
+    if (m_schemeSelectorPosition != "hidden" && m_schemeSelectorPosition == m_clockPosition) {
+      occupied += Style::controlHeightSm() + Style::spaceSm();
+    }
+    if (m_powerButtonsPosition != "hidden" && m_powerButtonsPosition == m_clockPosition) {
+      occupied += Style::controlHeight() + Style::spaceSm();
+    }
+    blockX = onRight ? ox + sw - margin - blockWidth : ox + margin;
+    blockY = onBottom ? oy + sh - margin - occupied - totalHeight : oy + margin + occupied;
+    if (blockY < oy + margin || blockY + totalHeight > oy + sh - margin) {
+      m_clockTimeLabel->setVisible(false);
+      m_clockDateLabel->setVisible(false);
+      return;
+    }
+  }
+
+  float y = blockY;
+  const auto placeCentered = [blockX, blockWidth, &y](Label* label, const float followingGap) {
+    if (label == nullptr || !label->visible()) {
+      return;
+    }
+    label->setPosition(std::round(blockX + (blockWidth - label->width()) * 0.5f), std::round(y));
+    y += label->height() + followingGap;
+  };
+  placeCentered(m_clockTimeLabel, m_clockDateLabel->visible() ? lineGap : 0.0f);
+  placeCentered(m_clockDateLabel, 0.0f);
 }
 
 void GreeterSurface::setFocusIndex(std::ptrdiff_t index) {

@@ -36,6 +36,10 @@ namespace greeter {
     // UI element positioning: "hidden", "bottom-left", "bottom-right", "top-left", "top-right"
     std::optional<std::string> powerButtonsPosition;
     std::optional<std::string> schemeSelectorPosition;
+    bool clockEnabled = true;
+    std::string clockPosition = "above-panel";
+    std::string clockTimeFormat = "{:%H:%M}";
+    std::string clockDateFormat = "%A, %x";
   };
 
   [[nodiscard]] std::filesystem::path greeterConfPath();

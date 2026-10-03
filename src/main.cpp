@@ -7,6 +7,7 @@
 #include "wayland/wayland_client.h"
 
 #include <atomic>
+#include <clocale>
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
@@ -79,6 +80,9 @@ namespace {
 } // namespace
 
 int main(int argc, char* argv[]) {
+  std::setlocale(LC_ALL, "");
+  std::setlocale(LC_NUMERIC, "C");
+
   if (argc >= 2 && std::strcmp(argv[1], "passwordless-sync") == 0) {
     return greeter::passwordless_sync::runCommand(argc - 2, argv + 2);
   }

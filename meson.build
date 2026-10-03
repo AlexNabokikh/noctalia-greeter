@@ -99,6 +99,7 @@ _greeter_sources = files(
   'src/core/deferred_call.cpp',
   'src/core/resource_paths.cpp',
   'src/core/ui_phase.cpp',
+  'src/time/time_format.cpp',
   'src/wayland/wayland_client.cpp',
   'src/wayland/wayland_seat.cpp',
   'src/render/gl_shared_context.cpp',
@@ -418,6 +419,16 @@ session_discovery_test = executable(
 )
 
 test('session-discovery', session_discovery_test)
+
+time_format_test = executable(
+  'time-format-test',
+  sources: files('tests/time_format_test.cpp', 'src/time/time_format.cpp'),
+  include_directories: include_directories('src'),
+  cpp_args: ['-Wall', '-Wextra', '-Wpedantic', '-Wconversion', '-Wshadow'],
+  build_by_default: false,
+)
+
+test('time-format', time_format_test)
 
 wallpaper_program_pixel_test = executable(
   'wallpaper-program-pixel-test',

@@ -5,6 +5,7 @@
 #include "greeter/greeter_config_store.h"
 #include "greeter/privileged_state_paths.h"
 
+#include <array>
 #include <cctype>
 #include <cerrno>
 #include <cmath>
@@ -14,6 +15,7 @@
 #include <filesystem>
 #include <optional>
 #include <pwd.h>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <sys/stat.h>
@@ -423,6 +425,25 @@ namespace greeter {
     }
     prefs.powerButtonsPosition = file.appearancePowerButtonsPosition;
     prefs.schemeSelectorPosition = file.appearanceSchemeSelectorPosition;
+    if (file.clockEnabled.has_value()) {
+      prefs.clockEnabled = *file.clockEnabled;
+    }
+    if (file.clockPosition.has_value()) {
+      constexpr std::array<std::string_view, 5> kClockPositions{
+          "above-panel", "top-left", "top-right", "bottom-left", "bottom-right"
+      };
+      if (std::ranges::find(kClockPositions, *file.clockPosition) != kClockPositions.end()) {
+        prefs.clockPosition = *file.clockPosition;
+      } else {
+        kLog.warn("invalid clock.position '{}' (using above-panel)", *file.clockPosition);
+      }
+    }
+    if (file.clockTimeFormat.has_value()) {
+      prefs.clockTimeFormat = *file.clockTimeFormat;
+    }
+    if (file.clockDateFormat.has_value()) {
+      prefs.clockDateFormat = *file.clockDateFormat;
+    }
     if (file.authAllowEmptyPassword.has_value()) {
       prefs.allowEmptyPassword = *file.authAllowEmptyPassword;
     }

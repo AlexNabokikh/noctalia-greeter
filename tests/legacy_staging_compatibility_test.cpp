@@ -229,6 +229,33 @@ fill_color = "#ff0000"
     {
       Fixture fixture(0700, 0600);
       std::ofstream(fixture.runtimeDirectory / "greeter.toml") << R"toml(
+[clock]
+enabled = false
+position = "bottom-left"
+time_format = ""
+date_format = "{:%F}"
+)toml";
+
+      const ScopedStateDirectory stateDirectory(fixture.runtimeDirectory);
+      const auto preferences = greeter::loadGreeterPreferences();
+      expect("clock enabled parses", preferences.clockEnabled, false, {}, passed);
+      expect("clock position parses", preferences.clockPosition == "bottom-left", true, {}, passed);
+      expect("empty clock format is preserved", preferences.clockTimeFormat.empty(), true, {}, passed);
+      expect("clock date format parses", preferences.clockDateFormat == "{:%F}", true, {}, passed);
+
+      const auto configPath = fixture.runtimeDirectory / "greeter.toml";
+      const auto config = greeter::config::loadConfig(configPath);
+      expect("clock config rewrites", greeter::config::writeConfig(configPath, config), true, {}, passed);
+      const auto rewritten = greeter::config::loadConfig(configPath);
+      expect(
+          "empty clock format survives rewrite",
+          rewritten.clockTimeFormat.has_value() && rewritten.clockTimeFormat->empty(), true, {}, passed
+      );
+    }
+
+    {
+      Fixture fixture(0700, 0600);
+      std::ofstream(fixture.runtimeDirectory / "greeter.toml") << R"toml(
 [output]
 name = "Acer Technologies XV242Y TL1EE0018521"
 width = 1920
